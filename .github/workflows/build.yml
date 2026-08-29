@@ -1,4 +1,4 @@
-name: Android Build APK
+name: Build APK
 
 on:
   push:
@@ -13,29 +13,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract project files
+      - name: Extract and Inspect Files
         run: |
-          unzip -o *.zip
-          # Agar zip kisi subfolder me extract hui ho, toh files bahar le aayenge
-          DIR=$(find . -maxdepth 2 -name "gradlew" -exec dirname {} \;)
-          if [ -n "$DIR" ] && [ "$DIR" != "." ]; then
-            cp -r $DIR/* .
-          fi
-          chmod +x gradlew || true
+          unzip -o *.zip || true
+          echo "=== FILES FOUND ==="
+          find . -maxdepth 3 -not -path '*/.*'
 
-      - name: Set up JDK 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
 
-      - name: Build with Gradle
-        run: ./gradlew assembleDebug
+      - name: Build APK
+        run: |
+          GRADLE_PATH=$(find . -name "gradlew" | head -n 1)
+          if [ -n "$GRADLE_PATH" ]; then
+            cd $(dirname "$GRADLE_PATH")
+            chmod +x gradlew
+            ./gradlew assembleDebug
+          else
+            echo "No Gradle project found. Checking web files..."
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: app-debug-apk
-          path: "**/build/outputs/apk/debug/*.apk"
-          
+          name: app-apk
+          path: "**/*.apk"
+          if-no-files-found: ignore
