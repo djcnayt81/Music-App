@@ -16,6 +16,11 @@ jobs:
       - name: Extract project files
         run: |
           unzip -o *.zip
+          # Agar zip kisi subfolder me extract hui ho, toh files bahar le aayenge
+          DIR=$(find . -maxdepth 2 -name "gradlew" -exec dirname {} \;)
+          if [ -n "$DIR" ] && [ "$DIR" != "." ]; then
+            cp -r $DIR/* .
+          fi
           chmod +x gradlew || true
 
       - name: Set up JDK 17
